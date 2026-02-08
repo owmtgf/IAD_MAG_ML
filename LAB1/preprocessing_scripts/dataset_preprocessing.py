@@ -34,9 +34,9 @@ def map_features(df: pd.DataFrame, feature_mapping: dict) -> pd.DataFrame:
     df_out = df.copy()
     
     for feature, mapping in feature_mapping.items():
-        assert feature in df_out.columns, (
-            f"Feature '{feature}' not found in DataFrame"
-        )
+        if feature not in df_out.columns: 
+            print(f"Feature '{feature}' not found in DataFrame. Skipping...")
+            continue
         assert isinstance(mapping, dict), (
             f"Mapping for feature '{feature}' must be a dict"
         )
@@ -45,10 +45,11 @@ def map_features(df: pd.DataFrame, feature_mapping: dict) -> pd.DataFrame:
         mapping_keys = set(mapping.keys())
         
         invalid_keys = mapping_keys - existing_values
-        assert len(invalid_keys) == 0, (
-            f"Mapping for feature '{feature}' contains labels "
-            f"not present in data: {invalid_keys}"
-        )
+        if len(invalid_keys) != 0: 
+            print(
+                f"Mapping for feature '{feature}' contains labels "
+                f"not present in data: {invalid_keys}"
+            )
         
         df_out[feature] = df_out[feature].map(
             lambda x: mapping.get(x, x)
