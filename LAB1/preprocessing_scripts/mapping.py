@@ -1,26 +1,22 @@
 import pandas as pd
+from preprocessing_scripts import MISSING_TOKENS
+
 
 def get_mapping(df: pd.DataFrame) -> dict:
 
     binary_mapping = {}
 
-    # Tokens treated as missing / ignored
-    missing_tokens = {"--", "not reported"}
-
     for col in df.columns:
-        # Only object (string-like) columns
         if df[col].dtype != "object":
             continue
 
-        # Get unique valid values
         unique_vals = (
             df[col]
             .dropna()
-            .loc[~df[col].isin(missing_tokens)]
+            .loc[~df[col].isin(MISSING_TOKENS)]
             .unique()
         )
 
-        # Deterministic ordering
         sorted_vals = sorted(unique_vals)
 
         binary_mapping[col] = {
@@ -28,6 +24,7 @@ def get_mapping(df: pd.DataFrame) -> dict:
         }
 
     return binary_mapping
+
 
 def flip_mapping(mapping: dict) -> dict:
 
