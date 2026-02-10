@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -19,6 +20,7 @@ class GradientBoostingRandomSubspace(BaseEstimator, ClassifierMixin):
         n_estimators=100,
         learning_rate=0.1,
         max_features=0.7,
+        class_weight=None,
         random_state=42,
         verbose=True
     ):
@@ -26,6 +28,7 @@ class GradientBoostingRandomSubspace(BaseEstimator, ClassifierMixin):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_features = max_features
+        self.class_weight = class_weight
         self.random_state = random_state
         self.verbose = verbose
 
@@ -36,6 +39,14 @@ class GradientBoostingRandomSubspace(BaseEstimator, ClassifierMixin):
 
         rng = np.random.default_rng(self.random_state)
         n_samples, n_features = X.shape
+
+        if self.class_weight is not None:
+            sample_weight = compute_sample_weight(
+                class_weight=self.class_weight,
+                y=y
+            )
+        else:
+            sample_weight = np.ones(n_samples, dtype=float)
 
         p = np.clip(y.mean(), 1e-6, 1 - 1e-6)
         self.init_val_ = np.log(p / (1 - p))
@@ -52,16 +63,20 @@ class GradientBoostingRandomSubspace(BaseEstimator, ClassifierMixin):
         for _ in iterator:
 
             probs = 1 / (1 + np.exp(-F))
-            residuals = y - probs
+
+            residuals = sample_weight * (y - probs)
 
             k = max(1, int(self.max_features * n_features))
             features = rng.choice(n_features, size=k, replace=False)
 
             model = clone(self.base_model)
-            model.fit(X[:, features], residuals)
+            model.fit(
+                X[:, features],
+                residuals,
+                sample_weight=sample_weight
+            )
 
-            update = model.predict(X[:, features])
-            F += self.learning_rate * update
+            F += self.learning_rate * model.predict(X[:, features])
 
             self.models_.append(model)
             self.feature_sets_.append(features)
@@ -82,6 +97,7 @@ class GradientBoostingRandomSubspace(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
 
+
 def score_metrics(y_prob, y, verbose=True):
     y_pred = (y_prob >= 0.5).astype(int)
 
@@ -100,7 +116,7 @@ def score_metrics(y_prob, y, verbose=True):
         print(f"Recall   : {metrics['recall']:.4f}")
         print(f"F1-score : {metrics['f1_score']:.4f}")
         print(f"ROC-AUC  : {metrics['roc_auc']:.4f}")
-        print("Confusion matrix:")
+        print("\nConfusion matrix:")
         print(metrics["confusion_matrix"])
 
     return metrics
