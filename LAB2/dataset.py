@@ -1,9 +1,11 @@
 from pathlib import Path
 from collections import defaultdict
 
+import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
+from torch.utils.data import Dataset
 
 
 ID2LABEL = {
@@ -30,7 +32,6 @@ LABEL2ID = {v:k for k,v in ID2LABEL.items()}
 
 
 class NERDatasetProcessor:
-
     def __init__(self, file_path: Path, split: str):
         assert split in {"train", "test"}, "split must be 'train' or 'test'"
         self.file_path = file_path
@@ -78,7 +79,6 @@ class NERDatasetProcessor:
     
 
 def dataset_stats(sentences):
-
     lengths = [len(s) for s in sentences]
 
     print("Total sentences:", len(sentences))
@@ -87,7 +87,6 @@ def dataset_stats(sentences):
 
 
 class NERKnowledgeBase:
-
     def __init__(self):
         self.categories = defaultdict(set)
         self.entity_texts = defaultdict(list)
@@ -101,7 +100,7 @@ class NERKnowledgeBase:
             self.entity_meaning[entity] = meaning
 
     def delete_entity(self, entity: str):
-        for cat, ents in self.categories.items():
+        for _, ents in self.categories.items():
             if entity in ents:
                 ents.remove(entity)
         if entity in self.entity_texts:
@@ -137,3 +136,46 @@ class NERKnowledgeBase:
         plt.axis("off")
         plt.title(f"Word Cloud for category: {category}")
         plt.show()
+
+
+def extract_entities(words, tags):
+
+    entities = []
+    current_entity = []
+    current_type = None
+
+    for word, tag_id in zip(words, tags):
+        tag = ID2LABEL[tag_id]
+        if tag == "O":
+            if current_entity:
+                entities.append((" ".join(current_entity), current_type))
+                current_entity = []
+                current_type = None
+            continue
+
+        prefix, entity_type = tag.split("-")
+        if prefix == "B":
+            if current_entity:
+                entities.append((" ".join(current_entity), current_type))
+
+            current_entity = [word]
+            current_type = entity_type
+
+        elif prefix == "I":
+            current_entity.append(word)
+
+    if current_entity:
+        entities.append((" ".join(current_entity), current_type))
+
+    return entities
+
+
+class NERDataset(Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
+
+    def __getitem__(self, idx):
+        return {k: v[idx] for k, v in self.encodings.items()}
+
+    def __len__(self):
+        return len(self.encodings["input_ids"])
