@@ -1,89 +1,12 @@
+import json
 from pathlib import Path
 from collections import defaultdict
 
-import torch
-import pandas as pd
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from wordcloud import WordCloud
-from torch.utils.data import Dataset
 
-
-ID2LABEL = {
-    0:"O",
-    1:"B-per",
-    2:"I-per",
-    3:"B-gpe",
-    4:"I-gpe",
-    5:"B-eve",
-    6:"I-eve",
-    7:"B-geo",
-    8:"I-geo",
-    9:"B-nat",
-    10:"I-nat",
-    11:"B-art",
-    12:"I-art",
-    13:"B-tim",
-    14:"I-tim",
-    15:"B-org",
-    16:"I-org"
-}
-
-LABEL2ID = {v:k for k,v in ID2LABEL.items()}
-
-
-class NERDatasetProcessor:
-    def __init__(self, file_path: Path, split: str):
-        assert split in {"train", "test"}, "split must be 'train' or 'test'"
-        self.file_path = file_path
-        self.df = None
-        self.split = split
-
-    def load_data(self):
-        """Load CSV dataset"""
-        self.df = pd.read_csv(self.file_path)
-
-    def clean_data(self):
-        """Common processing + split-specific handling"""
-
-        if "Unnamed: 0" in self.df.columns:
-            self.df = self.df.drop(columns=["Unnamed: 0"])
-
-        self.df["Sentence_id"] = self.df["Sentence_id"].ffill()
-
-        if self.split == "train":
-            self.df = self.df.dropna(subset=["Word"])
-
-        elif self.split == "test":
-            self.df["Word"] = self.df["Word"].fillna("[UNK]")
-
-        self.df = self.df.reset_index(drop=True)
-
-    def get_sentences(self):
-        """Convert dataframe into sentences + labels"""
-
-        sentences = []
-        labels = []
-
-        for _, group in self.df.groupby("Sentence_id"):
-            words = group["Word"].tolist()
-
-            if self.split == "train":
-                tags = group["Tag"].tolist()
-            else:
-                tags = [0] * len(words)  # placeholder
-
-            sentences.append(words)
-            labels.append(tags)
-
-        return sentences, labels
-    
-
-def dataset_stats(sentences):
-    lengths = [len(s) for s in sentences]
-
-    print("Total sentences:", len(sentences))
-    print("Average length:", sum(lengths)/len(lengths))
-    print("Max length:", max(lengths))
+from .globals import ID2LABEL
 
 
 class NERKnowledgeBase:
@@ -136,6 +59,50 @@ class NERKnowledgeBase:
         plt.axis("off")
         plt.title(f"Word Cloud for category: {category}")
         plt.show()
+    
+    def save(self, path: str | Path):
+        data = {
+            "categories": {k: list(v) for k, v in self.categories.items()},
+            "entity_texts": dict(self.entity_texts),
+            "entity_meaning": self.entity_meaning
+        }
+
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    @classmethod
+    def load(cls, path: str | Path):
+
+        path = Path(path)
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        kb = cls()
+
+        for category, entities in data["categories"].items():
+            kb.categories[category] = set(entities)
+
+        kb.entity_texts = defaultdict(list, data["entity_texts"])
+        kb.entity_meaning = data["entity_meaning"]
+
+        return kb
+
+
+def populate_knowledge_base(knowledgebase, train_sentences, train_labels):
+    if not knowledgebase:
+        knowledgebase = NERKnowledgeBase()
+    for words, tags in tqdm(zip(train_sentences, train_labels), desc="Populating knowledge base"):
+        entities = extract_entities(words, tags)
+        text = " ".join(words)
+
+        for entity, category in entities:
+            knowledgebase.add_entity(entity, category, texts=[text])
+            
+    return knowledgebase
 
 
 def extract_entities(words, tags):
@@ -168,14 +135,3 @@ def extract_entities(words, tags):
         entities.append((" ".join(current_entity), current_type))
 
     return entities
-
-
-class NERDataset(Dataset):
-    def __init__(self, encodings):
-        self.encodings = encodings
-
-    def __getitem__(self, idx):
-        return {k: v[idx] for k, v in self.encodings.items()}
-
-    def __len__(self):
-        return len(self.encodings["input_ids"])
