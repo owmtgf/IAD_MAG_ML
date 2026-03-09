@@ -24,7 +24,7 @@ This project implements a Named Entity Recognition (NER) system enhanced with a 
 - `codebase/pipeline.py` - tokenization, and prediction pipeline
 
 ### Analysis
-- `data_analysis.ipynb` - data analysis and KB demonstration, found methods are involved in preprocessing in `codebase/model/dataset.py`
+- `data_analysis.ipynb` - data analysis, found methods are involved in preprocessing in `codebase/model/dataset.py`
 - `knowledge_base.ipynb` - Knowledge Base workflow demonstration
 
 ### Extras
