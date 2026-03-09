@@ -91,14 +91,14 @@ if __name__ == "__main__":
     parser = ArgumentParser()
 
     parser.add_argument(
-        "-i", "--input_csv",
+        "-gt", "--ground_truth_csv",
         type=Path,
         default=Path("./dataset/test.csv"),
         help="Ground truth dataset"
     )
 
     parser.add_argument(
-        "-o", "--output_csv",
+        "-pred", "--predictions_csv",
         type=Path,
         default=Path("./outputs/submission.csv"),
         help="Model predictions"
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     print(f"Start running {__file__}. Running arguments:\n{args}")
 
     run_evaluation(
-        input_csv=args.input_csv,
-        output_csv=args.output_csv,
+        input_csv=args.ground_truth_csv,
+        output_csv=args.predictions_csv,
         metrics_csv=args.metrics_csv
     )
