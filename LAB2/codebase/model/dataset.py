@@ -5,15 +5,18 @@ from torch.utils.data import Dataset
 
 
 class NERDatasetProcessor:
-    def __init__(self, file_path: Path, split: str):
+    def __init__(self, data_source: Path | pd.DataFrame, split: str):
         assert split in {"train", "test"}, "split must be 'train' or 'test'"
-        self.file_path = file_path
+        self.data_source = data_source
         self.df = None
         self.split = split
 
     def load_data(self):
         """Load CSV dataset"""
-        self.df = pd.read_csv(self.file_path)
+        if isinstance(self.data_source, pd.DataFrame):
+            self.df = self.data_source
+        else:
+            self.df = pd.read_csv(self.data_source)
 
     def clean_data(self):
         """Common processing + split-specific handling"""

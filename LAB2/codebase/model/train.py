@@ -6,10 +6,11 @@ from transformers import (
     TrainingArguments,
     Trainer,
 )
+from tqdm import tqdm
 from transformers import DataCollatorForTokenClassification
 from sklearn.model_selection import train_test_split
 
-from ..knowledgebase import populate_knowledge_base
+from ..knowledgebase import NERKnowledgeBase
 from .dataset import (
     NERDatasetProcessor,
     NERDataset,
@@ -41,13 +42,13 @@ def train(
     sentences, labels = processor.get_sentences()
     dataset_stats(sentences)
 
-    # Adding training data to knowledge base
-    kb = populate_knowledge_base(
-        knowledgebase=None,
-        train_sentences=sentences, 
-        train_labels=labels,
-    )
-    kb.save(output_dir / "knowledge_base" / "kb.json")
+    kb = NERKnowledgeBase()
+    for sent, tag_seq in tqdm(zip(sentences, labels), desc="Adding training data to knowledge base"):
+        entities = NERKnowledgeBase.extract_entities(sent, tag_seq)
+        text = " ".join(sent)
+        for entity, category in entities:
+            kb.add_entity(entity, category, texts=[text])
+    kb.save("./knowledge_base/kb.json")
 
     train_s, val_s, train_l, val_l = train_test_split(
         sentences,
