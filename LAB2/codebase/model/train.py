@@ -2,7 +2,6 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 import torch
-from tqdm import tqdm
 from transformers import (
     TrainingArguments,
     Trainer,
@@ -19,6 +18,7 @@ from .dataset import (
 from .model_utils import load_model, load_tokenizer
 from .pipeline import tokenize
 from .evaluate import compute_metrics
+from ..globals import RANDOM_SEED
 
 
 def train(
@@ -53,7 +53,7 @@ def train(
         sentences,
         labels,
         test_size=0.1,
-        random_state=42,
+        random_state=RANDOM_SEED,
     )
 
     train_tokenized = tokenize(tokenizer, train_s, train_l)
@@ -62,16 +62,18 @@ def train(
     val_dataset = NERDataset(val_tokenized)
 
     training_args = TrainingArguments(
-        seed=42,
-        data_seed=42,
+        seed=RANDOM_SEED,
+        data_seed=RANDOM_SEED,
         output_dir=output_dir,
         eval_strategy="epoch",
-        learning_rate=3e-5,
+        learning_rate=4.8e-5,
         lr_scheduler_type="cosine_with_min_lr",
-        lr_scheduler_kwargs={"min_lr": 1e-8},
+        lr_scheduler_kwargs={"min_lr": 1.2e-8},
+        warmup_ratio=0.04,
+        weight_decay=0.027,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size*2,
-        num_train_epochs=3,
+        num_train_epochs=4,
         logging_steps=25,
         save_strategy="epoch",
     )
@@ -92,12 +94,12 @@ def train(
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-c", "--checkpoint_dir", type=Path,
-                        default=Path("./checkpoints/bert-base-cased"))
+                        default=Path("./checkpoints/bert-large-cased"))
     parser.add_argument("-i", "--input_csv", type=Path,
                         default=Path("./dataset/train.csv"))
     parser.add_argument("-o", "--output_dir", type=Path,
                         default=Path("./checkpoints/bert-ner-test"))
-    parser.add_argument("-b", "--batch_size", type=int, default=16)
+    parser.add_argument("-b", "--batch_size", type=int, default=32)
     args = parser.parse_args()
     print(f"Start running {__file__}. Running arguments:\n{args}")
 
