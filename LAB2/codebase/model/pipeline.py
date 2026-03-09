@@ -1,9 +1,10 @@
-def tokenize(tokenizer, sentences, labels=None):
+def tokenize(tokenizer, sentences, labels=None, max_length=128):
 
     tokenized = tokenizer(
         sentences,
         is_split_into_words=True,
         truncation=True,
+        max_length=max_length, # 512 accordingly to pre-trained tokenizer config, we force it to 128 due data analysis results 
     )
 
     if labels is None:
