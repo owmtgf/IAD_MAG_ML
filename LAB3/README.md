@@ -40,3 +40,7 @@ Fuction `pipeline` is meant to read and process YOLO dataset.
 
 ---
 CLI was not added in any of the scripts intentionally, because we can use the functions somewhere in the full pipeline script or something.
+
+
+## Visualization
+Set images, labels, yaml file and output paths to `visualization.py` file and `max_images` first images of the dataset will be visualized with bboxes and category name in the `output_path` folder
