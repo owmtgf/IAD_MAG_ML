@@ -96,15 +96,10 @@ def train_val_split(yolo_path: Path, val_rate: float = 0.2):
 
 
 if __name__ == "__main__":
-    # input_coco = Path("/home/maria/Projects/IAD_MAG_ML/LAB3/data/dm-2026-lab-3-object-detection/usdc_train.json")
-    # output_folder = Path("/home/maria/Projects/IAD_MAG_ML/LAB3/data/dm-2026-lab-3-object-detection/YOLO")
-    # images_path = Path("/home/maria/Projects/IAD_MAG_ML/LAB3/data/dm-2026-lab-3-object-detection/YOLO/images/train")
-    # split = "train"
+    input_coco = Path("LAB3/data/dm-2026-lab-3-object-detection/usdc_train.json")
+    output_folder = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO")
+    images_path = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO/images/train")
+    split = "train"
 
-    input_coco = Path("/home/maria/Projects/IAD_MAG_ML/LAB3/data/dm-2026-lab-3-object-detection/test_file_names.json")
-    output_folder = Path("/home/maria/Projects/IAD_MAG_ML/LAB3/data/dm-2026-lab-3-object-detection/YOLO")
-    images_path = Path("/home/maria/Projects/IAD_MAG_ML/LAB3/data/dm-2026-lab-3-object-detection/YOLO/images/test")
-    split = "test"
-
-    # convert(input_coco, output_folder, images_path, split)
+    convert(input_coco, output_folder, images_path, split)
     train_val_split(output_folder)
