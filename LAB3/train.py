@@ -1,15 +1,17 @@
+import torch
 from pathlib import Path
 from ultralytics import YOLO
 
 def train(yolo_dataset_yaml: str):
     model = YOLO("/home/maria/Projects/IAD_MAG_ML/LAB3/data/model/yolo12x.pt")
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     results = model.train(
         data=yolo_dataset_yaml,
         epochs=10,
         imgsz=640,
-        batch=16,
-        device=0,
+        batch=8,
+        device=device,
         workers=4,
         seed=42,
         augment=False,
