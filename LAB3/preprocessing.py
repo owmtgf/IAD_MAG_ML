@@ -1,9 +1,12 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from tqdm import tqdm
+import random
+
 import torch
 import torch.nn.functional as F
 import cv2
+from torch.utils.data import Dataset as TorchDataset
 
 from utils import yaml_read, compute_iou
 
@@ -112,39 +115,7 @@ def filter_duplicate_bboxes(
     return filtered
 
 
-def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 3, eps: float = 1e-5):
-    pad = kernel_size // 2
-    mean = F.avg_pool2d(img, kernel_size, stride=1, padding=pad)
-    sq_mean = F.avg_pool2d(img * img, kernel_size, stride=1, padding=pad)
-    var = sq_mean - mean * mean
-    std = torch.sqrt(torch.clamp(var, min=eps))
-
-    centered = img - mean
-    mask = std > 1.0
-    normalized = torch.where(mask, centered / std, centered)
-    return normalized
-
-def local_response_normalization(img: torch.Tensor, size=5, alpha=1e-4, beta=0.75, k=2.0):
-    return F.local_response_norm(img, size=size, alpha=alpha, beta=beta, k=k)
-
-
-def process_image(image_path: Path, method: str = "none"):
-    img = cv2.imread(str(image_path))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = torch.from_numpy(img).float() / 255.0
-    img = img.permute(2, 0, 1).unsqueeze(0)
-
-    if method == "lcn":
-        img = local_contrast_normalization(img)
-    elif method == "lrn":
-        img = local_response_normalization(img)
-
-    img = img.squeeze(0).permute(1, 2, 0).numpy()
-    img = (img * 255).clip(0, 255).astype("uint8")
-    return img
-
-
-def preprocess_dataset(dataset: Dataset, iou_threshold=0.9, norm_method="none", output_img_dir=None):
+def preprocess_dataset(dataset: Dataset, iou_threshold=0.9):
     # Bboxes filtering
     print(f"Before filtering there are {dataset.count_boxes()} bboxes")
     for image_data in tqdm(dataset.images, desc="Filtering"):
@@ -152,11 +123,6 @@ def preprocess_dataset(dataset: Dataset, iou_threshold=0.9, norm_method="none", 
             image_data.bboxes,
             iou_threshold=iou_threshold
         )
-    
-    if norm_method != "none":
-        img = process_image(image_data.image_path, method=norm_method)
-        out_path = output_img_dir / image_data.image_path.name
-        cv2.imwrite(str(out_path), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
     print(f"After filtering there are {dataset.count_boxes()} bboxes")
 
@@ -179,15 +145,64 @@ def save_yolo_labels(dataset: Dataset, output_path: Path, split: str):
             f.write("\n".join(lines))
 
 
+def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 3, eps: float = 1e-5):
+    pad = kernel_size // 2
+    mean = F.avg_pool2d(img, kernel_size, stride=1, padding=pad)
+    sq_mean = F.avg_pool2d(img * img, kernel_size, stride=1, padding=pad)
+    var = sq_mean - mean * mean
+    std = torch.sqrt(torch.clamp(var, min=eps))
+
+    centered = img - mean
+    mask = std > 1.0
+    normalized = torch.where(mask, centered / std, centered)
+    return normalized
+
+
+def local_response_normalization(img: torch.Tensor, size=5, alpha=1e-4, beta=0.75, k=2.0):
+    return F.local_response_norm(img, size=size, alpha=alpha, beta=beta, k=k)
+
+
+class DetectionDataset(TorchDataset):
+    def __init__(self, dataset: Dataset, norm: str = "none", hflip_prob: float = 0.5):
+        self.dataset = dataset
+        self.norm = norm
+        self.hflip_prob = hflip_prob
+
+    def __len__(self):
+        return len(self.dataset.images)
+
+    def __getitem__(self, idx):
+        data = self.dataset.images[idx]
+
+        img = cv2.imread(str(data.image_path))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = torch.from_numpy(img).float() / 255.0
+        img = img.permute(2, 0, 1)
+
+        labels = torch.tensor([
+            [bbox.cat_id, bbox.x_center, bbox.y_center, bbox.width, bbox.height]
+            for bbox in data.bboxes
+        ], dtype=torch.float32)
+
+        if random.random() < self.hflip_prob:
+            img = torch.flip(img, dims=[2])
+            if labels.numel() > 0:
+                labels[:, 1] = 1.0 - labels[:, 1]
+
+        if self.norm == "lcn":
+            img = local_contrast_normalization(img.unsqueeze(0)).squeeze(0)
+        elif self.norm == "lrn":
+            img = local_response_normalization(img.unsqueeze(0)).squeeze(0)
+
+        return img, labels
+    
+
 def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train", norm_method="none"):
     yolo_imgs = yolo_dataset_path / "images" / split
     yolo_labels = yolo_dataset_path / "labels" / split
 
-    output_img_dir = output_path / "images" / split
-    output_img_dir.mkdir(parents=True, exist_ok=True)
-
     dataset = read_yolo_dataset(yolo_imgs, yolo_labels, yolo_yaml_path)
-    preprocess_dataset(dataset, iou_threshold=0.75, norm_method=norm_method, output_img_dir=output_img_dir)
+    preprocess_dataset(dataset, iou_threshold=0.75)
     save_yolo_labels(dataset, output_path, split)
 
 
@@ -197,10 +212,11 @@ if __name__ == "__main__":
     output_path = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO_filtered")
     split = "train"
 
-    pipeline(
+    dataset = pipeline(
         yolo_dataset,
         yolo_yaml_path,
         output_path,
         split,
-        norm_method="lcn"
     )
+
+    train_dataset = DetectionDataset(dataset, norm="lrn", hflip_prob=0.5)
