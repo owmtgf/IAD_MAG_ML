@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from tqdm import tqdm
+import torch
+import torch.nn.functional as F
+import cv2
 
 from utils import yaml_read, compute_iou
 
@@ -35,7 +38,7 @@ class Dataset:
 
     def count_boxes(self):
         return sum(len(img.bboxes) for img in self.images)
-
+    
 
 def read_yolo_dataset(images_dir: Path, labels_dir: Path, yaml_path: Path) -> Dataset:
     dataset = Dataset()
@@ -109,7 +112,39 @@ def filter_duplicate_bboxes(
     return filtered
 
 
-def preprocess_dataset(dataset: Dataset, iou_threshold=0.9):
+def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 3, eps: float = 1e-5):
+    pad = kernel_size // 2
+    mean = F.avg_pool2d(img, kernel_size, stride=1, padding=pad)
+    sq_mean = F.avg_pool2d(img * img, kernel_size, stride=1, padding=pad)
+    var = sq_mean - mean * mean
+    std = torch.sqrt(torch.clamp(var, min=eps))
+
+    centered = img - mean
+    mask = std > 1.0
+    normalized = torch.where(mask, centered / std, centered)
+    return normalized
+
+def local_response_normalization(img: torch.Tensor, size=5, alpha=1e-4, beta=0.75, k=2.0):
+    return F.local_response_norm(img, size=size, alpha=alpha, beta=beta, k=k)
+
+
+def process_image(image_path: Path, method: str = "none"):
+    img = cv2.imread(str(image_path))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = torch.from_numpy(img).float() / 255.0
+    img = img.permute(2, 0, 1).unsqueeze(0)
+
+    if method == "lcn":
+        img = local_contrast_normalization(img)
+    elif method == "lrn":
+        img = local_response_normalization(img)
+
+    img = img.squeeze(0).permute(1, 2, 0).numpy()
+    img = (img * 255).clip(0, 255).astype("uint8")
+    return img
+
+
+def preprocess_dataset(dataset: Dataset, iou_threshold=0.9, norm_method="none", output_img_dir=None):
     # Bboxes filtering
     print(f"Before filtering there are {dataset.count_boxes()} bboxes")
     for image_data in tqdm(dataset.images, desc="Filtering"):
@@ -117,6 +152,12 @@ def preprocess_dataset(dataset: Dataset, iou_threshold=0.9):
             image_data.bboxes,
             iou_threshold=iou_threshold
         )
+    
+    if norm_method != "none":
+        img = process_image(image_data.image_path, method=norm_method)
+        out_path = output_img_dir / image_data.image_path.name
+        cv2.imwrite(str(out_path), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+
     print(f"After filtering there are {dataset.count_boxes()} bboxes")
 
     # Place for other preprocessing
@@ -138,12 +179,15 @@ def save_yolo_labels(dataset: Dataset, output_path: Path, split: str):
             f.write("\n".join(lines))
 
 
-def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train"):
+def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train", norm_method="none"):
     yolo_imgs = yolo_dataset_path / "images" / split
     yolo_labels = yolo_dataset_path / "labels" / split
 
+    output_img_dir = output_path / "images" / split
+    output_img_dir.mkdir(parents=True, exist_ok=True)
+
     dataset = read_yolo_dataset(yolo_imgs, yolo_labels, yolo_yaml_path)
-    preprocess_dataset(dataset, iou_threshold=0.75)
+    preprocess_dataset(dataset, iou_threshold=0.75, norm_method=norm_method, output_img_dir=output_img_dir)
     save_yolo_labels(dataset, output_path, split)
 
 
@@ -158,4 +202,5 @@ if __name__ == "__main__":
         yolo_yaml_path,
         output_path,
         split,
+        norm_method="lcn"
     )

@@ -6,7 +6,7 @@ from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
-seed = random.seed(42)
+random.seed(42)
 
 
 def make_yaml_file(cat_names: dict, output_folder: Path, images_folder: Path, split: str):
@@ -82,7 +82,7 @@ def train_val_split(yolo_path: Path, val_rate: float = 0.2):
     train_labels = {f.stem: f for f in (yolo_path / "labels" / "train").glob("*.txt")}
 
     num_val_samples = int(len(train_imgs) * val_rate)
-    val_images = set(random.sample(train_imgs, num_val_samples, seed=seed))
+    val_images = set(random.sample(train_imgs, num_val_samples))
     for img_path in tqdm(val_images, desc="Creating val dataset"):
         label_path = train_labels.get(img_path.stem)
         if not label_path or not label_path.exists():
