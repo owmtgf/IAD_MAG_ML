@@ -148,9 +148,9 @@ def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, s
 
 
 if __name__ == "__main__":
-    yolo_dataset = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO")
-    yolo_yaml_path = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
-    output_path = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO_filtered")
+    yolo_dataset = Path("data/dm-2026-lab-3-object-detection/YOLO")
+    yolo_yaml_path = Path("data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
+    output_path = Path("data/dm-2026-lab-3-object-detection/YOLO_filtered")
     split = "train"
 
     pipeline(

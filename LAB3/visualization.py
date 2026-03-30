@@ -1,7 +1,8 @@
-from pathlib import Path
+import numpy as np
 from tqdm import tqdm
+from pathlib import Path
+import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
-
 from utils import yaml_read, yolo_to_xyxy, generate_colors
 
 
@@ -93,17 +94,23 @@ def visualize_image(
     if save_path:
         canvas.save(save_path)
     else:
-        canvas.show()
+        canvas_np = np.array(canvas)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(canvas_np)
+        plt.axis('off')  # Hide axes
+        plt.title(f"Visualization: {image_path.name}")
+        plt.show()
 
 
 def visualize_dataset_sample(
     images_dir: Path,
     labels_dir: Path,
     yaml_path: Path,
-    output_dir: Path,
     max_images: int = 10,
+    output_dir: Path = None
 ):
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     class_names = yaml_read(yaml_path)
     colors = generate_colors(len(class_names))
@@ -112,7 +119,7 @@ def visualize_dataset_sample(
 
     for img_path in tqdm(image_paths[:max_images]):
         label_path = labels_dir / (img_path.stem + ".txt")
-        save_path = output_dir / f"{img_path.stem}_viz.jpg"
+        save_path = output_dir / f"{img_path.stem}_viz.jpg" if output_dir is not None else None
 
         visualize_image(
             img_path,
@@ -124,10 +131,10 @@ def visualize_dataset_sample(
 
 
 if __name__ == "__main__":
-    images_dir = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO/images/train")
-    labels_dir = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO_filtered/labels/train")
-    yaml_path = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
-    output_dir = Path("LAB3/data/dm-2026-lab-3-object-detection/vis")
+    images_dir = Path("data/dm-2026-lab-3-object-detection/YOLO/images/train")
+    labels_dir = Path("data/dm-2026-lab-3-object-detection/YOLO_filtered/labels/train")
+    yaml_path = Path("data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
+    output_dir = Path("data/dm-2026-lab-3-object-detection/vis")
     max_images = 20
 
-    visualize_dataset_sample(images_dir, labels_dir, yaml_path, output_dir, max_images)
+    visualize_dataset_sample(images_dir, labels_dir, yaml_path, max_images, output_dir)

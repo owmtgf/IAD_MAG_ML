@@ -1,8 +1,8 @@
 import torch
 from ultralytics import YOLO
 
-def train(yolo_dataset_yaml: str):
-    model = YOLO("LAB3/data/model/yolo12x.pt")
+def train(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
+    model = YOLO("data/model/yolo12x.pt")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # maybe add a config with parameters later
@@ -14,11 +14,12 @@ def train(yolo_dataset_yaml: str):
         device=device,
         workers=4,
         seed=42,
-        augment=False,
         pretrained=True,
         verbose=True,
-        project="LAB3/runs",
-        name="baseline",
+        project="runs",
+        augment=False,
+        name=name,
+        **kwargs
     )
     return model, results
 
@@ -34,13 +35,13 @@ def validate(yolo_dataset_yaml: str, model):
     return metrics
 
 
-def run_pipeline(yolo_dataset_yaml: str):
-    model, train_results = train(yolo_dataset_yaml)
+def run_pipeline(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
+    model, train_results = train(yolo_dataset_yaml, name, kwargs)
     val_metrics = validate(model)
 
     print("\nFinal validation metrics:")
     print(val_metrics)
 
 if __name__ == "__main__":
-    yolo_dataset_yaml = "LAB3/data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml"
+    yolo_dataset_yaml = "data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml"
     run_pipeline(yolo_dataset_yaml)
