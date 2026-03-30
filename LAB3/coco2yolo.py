@@ -134,10 +134,10 @@ def train_val_split(
 
 
 if __name__ == "__main__":
-    input_coco = Path("data/dm-2026-lab-3-object-detection/usdc_train.json")  # path to coco annotations
-    output_folder = Path("data/dm-2026-lab-3-object-detection/YOLO")
-    train_images_path = Path("data/dm-2026-lab-3-object-detection/train_images/train_images")  # path to train images
-    test_images_path = Path("data/dm-2026-lab-3-object-detection/test_images/test_images")  # path to test images
+    input_coco = Path("./data/dm-2026-lab-3-object-detection/usdc_train.json")  # path to coco annotations
+    output_folder = Path("./data/dm-2026-lab-3-object-detection/YOLO")
+    train_images_path = Path("./data/dm-2026-lab-3-object-detection/train_images/train_images")  # path to train images
+    test_images_path = Path("./data/dm-2026-lab-3-object-detection/test_images/test_images")  # path to test images
     split = "train"
 
     categories = convert(input_coco, output_folder, train_images_path, split)

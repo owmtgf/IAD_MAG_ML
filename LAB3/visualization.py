@@ -38,7 +38,7 @@ def visualize_image(
     colors: list[tuple[int, int, int]],
     save_path: Path = None,
     border: int = 40,
-):
+):  
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
 
@@ -115,7 +115,8 @@ def visualize_dataset_sample(
     class_names = yaml_read(yaml_path)
     colors = generate_colors(len(class_names))
 
-    image_paths = list(images_dir.glob("*"))
+    image_paths = sorted(set(images_dir.glob("*.jpg"))) + sorted(set(images_dir.glob("*.png")))
+    image_paths = sorted([i.resolve() for i in image_paths])
 
     for img_path in tqdm(image_paths[:max_images]):
         label_path = labels_dir / (img_path.stem + ".txt")
@@ -131,10 +132,10 @@ def visualize_dataset_sample(
 
 
 if __name__ == "__main__":
-    images_dir = Path("data/dm-2026-lab-3-object-detection/YOLO/images/train")
-    labels_dir = Path("data/dm-2026-lab-3-object-detection/YOLO_filtered/labels/train")
-    yaml_path = Path("data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
-    output_dir = Path("data/dm-2026-lab-3-object-detection/vis")
-    max_images = 20
+    images_dir = Path("./data/dm-2026-lab-3-object-detection/YOLO/images/train")
+    labels_dir = Path("./data/dm-2026-lab-3-object-detection/YOLO/labels/train")
+    yaml_path = Path("./data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
+    output_dir = Path("./data/dm-2026-lab-3-object-detection/vis")
+    max_images = 100
 
     visualize_dataset_sample(images_dir, labels_dir, yaml_path, max_images, output_dir)
