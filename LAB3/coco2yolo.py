@@ -13,9 +13,9 @@ np.random.seed(42)
 def make_yaml_file(cat_names: dict, output_folder: Path):
     yaml_dict = {
         "path": str(output_folder),
-        "train": str(output_folder / "images" / "train"),
-        "val": str(output_folder / "images" / "val"),
-        "test": str(output_folder / "images" / "test"),
+        "train": str("images/train"),
+        "val": str("images/val"),
+        "test": str("images/test"),
         "names": cat_names,
     }
     with open(output_folder / "yolo_dataset.yaml", "w") as f:
