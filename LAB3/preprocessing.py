@@ -1,12 +1,9 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from tqdm import tqdm
-import random
 
 import torch
 import torch.nn.functional as F
-import cv2
-from torch.utils.data import Dataset as TorchDataset
 
 from utils import yaml_read, compute_iou
 
@@ -145,56 +142,21 @@ def save_yolo_labels(dataset: Dataset, output_path: Path, split: str):
             f.write("\n".join(lines))
 
 
-def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 3, eps: float = 1e-5):
+def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 20, eps: float = 1e-5):
     pad = kernel_size // 2
+    
     mean = F.avg_pool2d(img, kernel_size, stride=1, padding=pad)
     sq_mean = F.avg_pool2d(img * img, kernel_size, stride=1, padding=pad)
+    
     var = sq_mean - mean * mean
     std = torch.sqrt(torch.clamp(var, min=eps))
-
-    centered = img - mean
-    mask = std > 1.0
-    normalized = torch.where(mask, centered / std, centered)
+    
+    normalized = (img - mean) / (std + eps)
     return normalized
 
 
 def local_response_normalization(img: torch.Tensor, size=5, alpha=1e-4, beta=0.75, k=2.0):
     return F.local_response_norm(img, size=size, alpha=alpha, beta=beta, k=k)
-
-
-class DetectionDataset(TorchDataset):
-    def __init__(self, dataset: Dataset, norm: str = "none", hflip_prob: float = 0.5):
-        self.dataset = dataset
-        self.norm = norm
-        self.hflip_prob = hflip_prob
-
-    def __len__(self):
-        return len(self.dataset.images)
-
-    def __getitem__(self, idx):
-        data = self.dataset.images[idx]
-
-        img = cv2.imread(str(data.image_path))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = torch.from_numpy(img).float() / 255.0
-        img = img.permute(2, 0, 1)
-
-        labels = torch.tensor([
-            [bbox.cat_id, bbox.x_center, bbox.y_center, bbox.width, bbox.height]
-            for bbox in data.bboxes
-        ], dtype=torch.float32)
-
-        if random.random() < self.hflip_prob:
-            img = torch.flip(img, dims=[2])
-            if labels.numel() > 0:
-                labels[:, 1] = 1.0 - labels[:, 1]
-
-        if self.norm == "lcn":
-            img = local_contrast_normalization(img.unsqueeze(0)).squeeze(0)
-        elif self.norm == "lrn":
-            img = local_response_normalization(img.unsqueeze(0)).squeeze(0)
-
-        return img, labels
     
 
 def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train", norm_method="none"):
@@ -218,5 +180,3 @@ if __name__ == "__main__":
         output_path,
         split,
     )
-
-    train_dataset = DetectionDataset(dataset, norm="lrn", hflip_prob=0.5)
