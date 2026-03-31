@@ -2,6 +2,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from tqdm import tqdm
 
+import torch
+import torch.nn.functional as F
+
 from utils import yaml_read, compute_iou
 
 
@@ -35,7 +38,7 @@ class Dataset:
 
     def count_boxes(self):
         return sum(len(img.bboxes) for img in self.images)
-
+    
 
 def read_yolo_dataset(images_dir: Path, labels_dir: Path, yaml_path: Path) -> Dataset:
     dataset = Dataset()
@@ -117,6 +120,7 @@ def preprocess_dataset(dataset: Dataset, iou_threshold=0.9):
             image_data.bboxes,
             iou_threshold=iou_threshold
         )
+
     print(f"After filtering there are {dataset.count_boxes()} bboxes")
 
     # Place for other preprocessing
@@ -138,7 +142,24 @@ def save_yolo_labels(dataset: Dataset, output_path: Path, split: str):
             f.write("\n".join(lines))
 
 
-def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train"):
+def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 20, eps: float = 1e-5):
+    pad = kernel_size // 2
+    
+    mean = F.avg_pool2d(img, kernel_size, stride=1, padding=pad)
+    sq_mean = F.avg_pool2d(img * img, kernel_size, stride=1, padding=pad)
+    
+    var = sq_mean - mean * mean
+    std = torch.sqrt(torch.clamp(var, min=eps))
+    
+    normalized = (img - mean) / (std + eps)
+    return normalized
+
+
+def local_response_normalization(img: torch.Tensor, size=5, alpha=1e-4, beta=0.75, k=2.0):
+    return F.local_response_norm(img, size=size, alpha=alpha, beta=beta, k=k)
+    
+
+def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train", norm_method="none"):
     yolo_imgs = yolo_dataset_path / "images" / split
     yolo_labels = yolo_dataset_path / "labels" / split
 
@@ -153,7 +174,7 @@ if __name__ == "__main__":
     output_path = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO_filtered")
     split = "train"
 
-    pipeline(
+    dataset = pipeline(
         yolo_dataset,
         yolo_yaml_path,
         output_path,
