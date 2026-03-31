@@ -13,9 +13,9 @@ np.random.seed(42)
 def make_yaml_file(cat_names: dict, output_folder: Path):
     yaml_dict = {
         "path": str(output_folder),
-        "train": str(output_folder / "images" / "train"),
-        "val": str(output_folder / "images" / "val"),
-        "test": str(output_folder / "images" / "test"),
+        "train": str("images/train"),
+        "val": str("images/val"),
+        "test": str("images/test"),
         "names": cat_names,
     }
     with open(output_folder / "yolo_dataset.yaml", "w") as f:
@@ -112,7 +112,7 @@ def train_val_split(
             continue
 
         val_img_out_path: Path = val_img_dir / img_path.name
-        val_img_out_path.symlink_to(img_path)
+        val_img_out_path.symlink_to(img_path.resolve())
         shutil.move(label_path, val_lbl_dir / label_path.name)
     
     print(f"Skipped {skipped} labels")
@@ -122,22 +122,22 @@ def train_val_split(
     print(f"Creating train images set of {len(train_set)} images")
     for img_path in tqdm(train_set):
         train_img_out_path: Path = train_img_dir / img_path.name
-        train_img_out_path.symlink_to(img_path)
+        train_img_out_path.symlink_to(img_path.resolve())
 
     test_imgs = sorted(set(test_images_path.glob("*.jpg"))) + sorted(set(test_images_path.glob("*.png")))
     print(f"Creating test images set of {len(test_imgs)} images")
     for img_path in tqdm(test_imgs):
         test_img_out_path: Path = test_img_dir / img_path.name
-        test_img_out_path.symlink_to(img_path)
+        test_img_out_path.symlink_to(img_path.resolve())
     
     make_yaml_file(categories, output_folder)
 
 
 if __name__ == "__main__":
-    input_coco = Path("LAB3/data/dm-2026-lab-3-object-detection/usdc_train.json")  # path to coco annotations
-    output_folder = Path("LAB3/data/dm-2026-lab-3-object-detection/YOLO")
-    train_images_path = Path("LAB3/data/dm-2026-lab-3-object-detection/train_images/train_images")  # path to train images
-    test_images_path = Path("LAB3/data/dm-2026-lab-3-object-detection/test_images/test_images")  # path to test images
+    input_coco = Path("data/dm-2026-lab-3-object-detection/usdc_train.json")  # path to coco annotations
+    output_folder = Path("data/dm-2026-lab-3-object-detection/YOLO")
+    train_images_path = Path("data/dm-2026-lab-3-object-detection/train_images/train_images")  # path to train images
+    test_images_path = Path("data/dm-2026-lab-3-object-detection/test_images/test_images")  # path to test images
     split = "train"
 
     categories = convert(input_coco, output_folder, train_images_path, split)
