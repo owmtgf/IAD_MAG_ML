@@ -139,4 +139,4 @@ if __name__ == "__main__":
     split = "train"
 
     categories = convert(input_coco, output_folder, train_images_path, split)
-    train_val_split(output_folder, train_images_path, test_images_path, categories)
+    train_val_split(output_folder, train_images_path, test_images_path, categories, val_rate=0.06)

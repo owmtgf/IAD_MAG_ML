@@ -128,7 +128,7 @@ def preprocess_dataset(dataset: Dataset, iou_threshold=0.9):
 
 def save_yolo_labels(dataset: Dataset, output_path: Path, split: str):
     output_path.mkdir(parents=True, exist_ok=True)
-    out_labels = output_path / "labels" / split
+    out_labels = output_path / "labels_filtered" / split
     out_labels.mkdir(parents=True, exist_ok=True)
 
     for image_data in dataset.images:
@@ -154,9 +154,17 @@ def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, s
 if __name__ == "__main__":
     yolo_dataset = Path("data/dm-2026-lab-3-object-detection/YOLO")
     yolo_yaml_path = Path("data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
-    output_path = Path("data/dm-2026-lab-3-object-detection/YOLO_filtered")
-    split = "val"
+    output_path = Path("data/dm-2026-lab-3-object-detection/YOLO")
 
+    split = "train"
+    dataset = pipeline(
+        yolo_dataset,
+        yolo_yaml_path,
+        output_path,
+        split,
+    )
+
+    split = "val"
     dataset = pipeline(
         yolo_dataset,
         yolo_yaml_path,
