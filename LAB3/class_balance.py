@@ -106,7 +106,7 @@ def count_class_ids(labels_dir):
 
 if __name__ == "__main__":
     src_dataset_path = Path("data/dm-2026-lab-3-object-detection/YOLO/labels")
-    dst_dataset_path = Path("data/dm-2026-lab-3-object-detection/YOLO_mapped/labels")
+    dst_dataset_path = Path("data/dm-2026-lab-3-object-detection/YOLO/labels_mapped")
     yaml_path = Path("data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml")
     mapping = {
         "trafficLight-GreenLeft": "trafficLight-Green",

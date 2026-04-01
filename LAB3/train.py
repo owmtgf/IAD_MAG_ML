@@ -29,7 +29,7 @@ def train(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
         perspective=0.0,
         flipud=0.0,
         fliplr=0.0,
-        mosaic=1.0,
+        mosaic=0.0,  # mosaic augmentation
         mixup=0.0,
         erasing=0.0,
         crop_fraction=0.0,
@@ -59,4 +59,4 @@ def run_pipeline(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
 
 if __name__ == "__main__":
     yolo_dataset_yaml = "data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml"
-    run_pipeline(yolo_dataset_yaml, name="mosaic_boxes_filtered_cls_map_fix")
+    run_pipeline(yolo_dataset_yaml, name="baseline")
