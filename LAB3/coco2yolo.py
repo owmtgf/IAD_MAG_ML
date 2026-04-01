@@ -79,7 +79,7 @@ def train_val_split(
         input_train_images_path: Path,
         test_images_path: Path,
         categories: dict,
-        val_rate: float = 0.2,
+        val_rate: float = 0.06,
     ):
     val_img_dir = yolo_path / "images" / "val"
     val_img_dir.mkdir(parents=True, exist_ok=True)
@@ -99,8 +99,6 @@ def train_val_split(
     num_val_samples = int(len(input_imgs) * val_rate)
     val_images = set(np.random.choice(input_imgs, size=num_val_samples, replace=False))
 
-    num_val_samples = int(len(train_imgs) * val_rate)
-    val_images = set(random.sample(train_imgs, num_val_samples))
     print(f"Overall we have {len(input_imgs)} images and {len(input_labels)} labels")
     print(f"Number of validation images: {num_val_samples}")
     skipped = 0
