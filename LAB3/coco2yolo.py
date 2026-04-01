@@ -99,8 +99,6 @@ def train_val_split(
     num_val_samples = int(len(input_imgs) * val_rate)
     val_images = set(np.random.choice(input_imgs, size=num_val_samples, replace=False))
 
-    num_val_samples = int(len(train_imgs) * val_rate)
-    val_images = set(random.sample(train_imgs, num_val_samples))
     print(f"Overall we have {len(input_imgs)} images and {len(input_labels)} labels")
     print(f"Number of validation images: {num_val_samples}")
     skipped = 0
@@ -141,4 +139,4 @@ if __name__ == "__main__":
     split = "train"
 
     categories = convert(input_coco, output_folder, train_images_path, split)
-    train_val_split(output_folder, train_images_path, test_images_path, categories)
+    train_val_split(output_folder, train_images_path, test_images_path, categories, val_rate=0.06)
