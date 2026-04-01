@@ -140,23 +140,6 @@ def save_yolo_labels(dataset: Dataset, output_path: Path, split: str):
 
         with open(out_labels / image_data.label_path.name, "w") as f:
             f.write("\n".join(lines))
-
-
-def local_contrast_normalization(img: torch.Tensor, kernel_size: int = 20, eps: float = 1e-5):
-    pad = kernel_size // 2
-    
-    mean = F.avg_pool2d(img, kernel_size, stride=1, padding=pad)
-    sq_mean = F.avg_pool2d(img * img, kernel_size, stride=1, padding=pad)
-    
-    var = sq_mean - mean * mean
-    std = torch.sqrt(torch.clamp(var, min=eps))
-    
-    normalized = (img - mean) / (std + eps)
-    return normalized
-
-
-def local_response_normalization(img: torch.Tensor, size=5, alpha=1e-4, beta=0.75, k=2.0):
-    return F.local_response_norm(img, size=size, alpha=alpha, beta=beta, k=k)
     
 
 def pipeline(yolo_dataset_path: Path, yolo_yaml_path: Path, output_path: Path, split: str = "train", norm_method="none"):

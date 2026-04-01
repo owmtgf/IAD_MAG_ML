@@ -44,3 +44,15 @@ CLI was not added in any of the scripts intentionally, because we can use the fu
 
 ## Visualization
 Set images, labels, yaml file and output paths to `visualization.py` file and `max_images` first images of the dataset will be visualized with bboxes and category name in the `output_path` folder
+
+## Pipeline
+
+- download data
+```
+mkdir data
+cd data
+kaggle competitions download -c dm-2026-lab-3-object-detection
+mkdir dm-2026-lab-3-object-detection
+unzip dm-2026-lab-3-object-detection.zip -d ./dm-2026-lab-3-object-detection/
+```
+- process data
