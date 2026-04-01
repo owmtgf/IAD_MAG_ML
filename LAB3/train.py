@@ -8,18 +8,33 @@ def train(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
     # maybe add a config with parameters later
     results = model.train(
         data=yolo_dataset_yaml,
-        epochs=3,
+        epochs=1,
         imgsz=640,
-        batch=8,
+        batch=16,
         device=device,
-        workers=4,
+        workers=1,
         seed=42,
         pretrained=True,
         verbose=True,
         project="runs",
         augment=False,
         name=name,
-        **kwargs
+        hsv_h=0.0,
+        hsv_s=0.0,
+        hsv_v=0.0,
+        degrees=0.0,
+        translate=0.0,
+        scale=0.0,
+        shear=0.0,
+        perspective=0.0,
+        flipud=0.0,
+        fliplr=0.0,
+        mosaic=1.0,
+        mixup=0.0,
+        erasing=0.0,
+        crop_fraction=0.0,
+        auto_augment=None,
+        **kwargs,
     )
     return model, results
 
@@ -44,4 +59,4 @@ def run_pipeline(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
 
 if __name__ == "__main__":
     yolo_dataset_yaml = "data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml"
-    run_pipeline(yolo_dataset_yaml)
+    run_pipeline(yolo_dataset_yaml, name="mosaic_boxes_filtered_cls_map_fix")
