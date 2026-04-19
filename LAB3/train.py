@@ -2,7 +2,7 @@ import torch
 from ultralytics import YOLO
 
 def train(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
-    model = YOLO("data/model/yolo12n.pt")
+    model = YOLO("data/model/yolo12m.pt")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     results = model.train(
@@ -16,8 +16,8 @@ def train(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
         pretrained=True,
         verbose=True,
         project="runs",
-        augment=False,
         name=name,
+<<<<<<< Updated upstream
         hsv_h=0.0,
         hsv_s=0.0,
         hsv_v=0.0,
@@ -33,6 +33,25 @@ def train(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
         erasing=0.0,
         crop_fraction=0.0,
         auto_augment=None,
+=======
+        # augment=False,
+        # hsv_h=0.0,
+        # hsv_s=0.0,
+        # hsv_v=0.0,
+        # degrees=0.0,
+        # translate=0.0,
+        # scale=0.0,
+        # shear=0.0,
+        # perspective=0.0,
+        # flipud=0.0,
+        # fliplr=0.0,
+        # mosaic=0.0,
+        # mixup=0.0,
+        # erasing=0.0,
+        # crop_fraction=0.0,
+        # auto_augment=None,
+        # cls=2.0,
+>>>>>>> Stashed changes
         **kwargs,
     )
     return model, results
@@ -58,4 +77,8 @@ def run_pipeline(yolo_dataset_yaml: str, name: str = 'baseline', **kwargs):
 
 if __name__ == "__main__":
     yolo_dataset_yaml = "data/dm-2026-lab-3-object-detection/YOLO/yolo_dataset.yaml"
+<<<<<<< Updated upstream
     run_pipeline(yolo_dataset_yaml, name="baseline")
+=======
+    run_pipeline(yolo_dataset_yaml, name="v12m_b8_base_labels")
+>>>>>>> Stashed changes

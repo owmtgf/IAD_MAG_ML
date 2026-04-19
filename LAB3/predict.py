@@ -7,12 +7,13 @@ import pandas as pd
 
 
 # ---------- CONFIG ----------
-MODEL_PATH = Path("./runs/detect/runs/baseline2/weights/best.pt")
+# MODEL_PATH = Path("./runs/detect/runs/baseline2/weights/best.pt")
+MODEL_PATH = Path("./kaggle/best.pt")
 IMAGE_DIR = Path("./data/dm-2026-lab-3-object-detection/YOLO/images/test")
 JSON_PATH = Path("./data/dm-2026-lab-3-object-detection/test_file_names.json")
 SAMPLE_CSV = Path("./data/dm-2026-lab-3-object-detection/submission.csv")
 OUTPUT_CSV = Path("submission.csv")
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 
 
 # ---------- LOAD JSON MAPPING ----------
@@ -52,7 +53,7 @@ def build_prediction_map(model, image_paths, id_map, batch_size=8, max_per_image
             source=[str(p) for p in batch_paths],
             imgsz=640,
             conf=0.01,
-            iou=0.2,
+            iou=0.7,
             device=0,
             verbose=False
         )
@@ -70,8 +71,8 @@ def build_prediction_map(model, image_paths, id_map, batch_size=8, max_per_image
                 r.boxes.conf.cpu().numpy()
             ))
 
-            boxes = sorted(boxes, key=lambda x: x[2], reverse=True)
-            boxes = boxes[:max_per_image]
+            # boxes = sorted(boxes, key=lambda x: x[2], reverse=True)
+            # boxes = boxes[:max_per_image]
 
             preds = []
             for box, cls, conf in boxes:
